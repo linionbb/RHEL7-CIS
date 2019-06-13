@@ -1,0 +1,47 @@
+{{ managed }}
+Port 22
+Protocol 2
+AddressFamily inet
+
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+SyslogFacility AUTHPRIV
+
+MaxAuthTries 4
+
+AuthorizedKeysFile .ssh/authorized_keys
+
+PasswordAuthentication yes
+
+GSSAPICleanupCredentials no
+
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+
+Subsystem sftp /usr/libexec/openssh/sftp-server
+
+KerberosAuthentication no
+PubkeyAuthentication yes
+UsePAM yes
+AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys
+GSSAPIAuthentication yes
+ChallengeResponseAuthentication yes
+AuthorizedKeysCommandUser nobody
+LogLevel INFO
+IgnoreRhosts yes
+HostbasedAuthentication no
+PermitRootLogin no
+PermitEmptyPasswords no
+PermitUserEnvironment no
+Ciphers {{ rhel7cis_ciphers }}
+MACs {{ rhel7cis_macs }}
+ClientAliveInterval {{ rhel7cis_clientaliveinterval }}
+ClientAliveCountMax {{ rhel7cis_clientalivecountmax }}
+LoginGraceTime {{ rhel7cis_logingracetime }}
+Banner /etc/issue.net
+AllowGroups {{ rhel7cis_allowgroups }}
+X11Forwarding {{ rhel7cis_x11forwarding }}

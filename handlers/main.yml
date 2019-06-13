@@ -1,78 +1,53 @@
 ---
-# handlers file for RHEL7-CIS
-
 - name: sysctl flush ipv4 route table
   become: yes
   sysctl:
-      name: net.ipv4.route.flush
-      value: 1
-      sysctl_set: yes
-  when: ansible_virtualization_type != "docker"
+    name: net.ipv4.route.flush
+    value: 1
+    sysctl_set: yes
 
 - name: sysctl flush ipv6 route table
   become: yes
   sysctl:
-      name: net.ipv6.route.flush
-      value: 1
-      sysctl_set: yes
-  when: ansible_virtualization_type != "docker"
+    name: net.ipv6.route.flush
+    value: 1
+    sysctl_set: yes
 
-- name: systemd restart tmp.mount
+- name: reload tmp.mount
   become: yes
   systemd:
-      name: tmp.mount
-      daemon_reload: yes
-      enabled: yes
-      masked: no
-      state: reloaded
-
-- name: systemd restart var-tmp.mount
-  become: yes
-  systemd:
-      name: var-tmp.mount
-      daemon_reload: yes
-      enabled: yes
-      masked: no
-      state: reloaded
+    name: tmp.mount
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+    state: reloaded
 
 - name: generate new grub config
   become: yes
-  command: grub2-mkconfig -o "{{ grub_cfg.stat.lnk_source }}"
-
-- name: restart firewalld
-  become: yes
-  service:
-      name: firewalld
-      state: restarted
+  command: grub2-mkconfig -o /boot/grub2/grub.cfg
 
 - name: restart xinetd
   become: yes
-  service:
-      name: xinetd
-      state: restarted
+  systemd:
+    name: xinetd
+    state: restarted
 
 - name: restart sshd
   become: yes
-  service:
-      name: sshd
-      state: restarted
+  systemd:
+    name: sshd
+    state: restarted
 
-- name: reload dconf
+- name: restart postfix
   become: yes
-  command: dconf update
+  systemd:
+    name: postfix
+    state: restarted
 
 - name: restart auditd
-  command: /sbin/service auditd restart
-  changed_when: no
-  check_mode: no
-  failed_when: no
+  become: yes
+  command: service auditd restart
   args:
     warn: no
-  when:
-    - rhel7cis_skip_for_travis == false
   tags:
     - skip_ansible_lint
-
-- name: grub2cfg
-  command: /sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
-  ignore_errors: True

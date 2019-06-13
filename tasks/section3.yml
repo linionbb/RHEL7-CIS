@@ -1,516 +1,194 @@
-- name: "SCORED | 3.1.1 | PATCH | Ensure IP forwarding is disabled"
+---
+- name: "SCORED | 3.1.1 | Ensure IP forwarding is disabled\n
+         SCORED | 3.1.2 | Ensure packet redirect sending is disabled\n
+         SCORED | 3.2.1 | Ensure source routed packets are not accepted\n
+         SCORED | 3.2.2 | Ensure ICMP redirects are not accepted\n
+         SCORED | 3.2.3 | Ensure secure ICMP redirects are not accepted\n
+         SCORED | 3.2.4 | Ensure suspicious packets are logged\n
+         SCORED | 3.2.5 | Ensure broadcast ICMP requests are ignored\n
+         SCORED | 3.2.6 | Ensure bogus ICMP responses are ignored\n
+         SCORED | 3.2.7 | Ensure Reverse Path Filtering is enabled\n
+         SCORED | 3.2.8 | Ensure TCP SYN Cookies is enabled\n"
   sysctl:
-      name: net.ipv4.ip_forward
-      value: 0
-      state: present
-      reload: yes
-      ignoreerrors: yes
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    reload: yes
+  loop:
+    - { name: net.ipv4.ip_forward, value: 0 }
+    - { name: net.ipv4.conf.all.send_redirects, value: 0 }
+    - { name: net.ipv4.conf.default.send_redirects, value: 0 }
+    - { name: net.ipv4.conf.all.accept_source_route, value: 0 }
+    - { name: net.ipv4.conf.default.accept_source_route, value: 0 }
+    - { name: net.ipv4.conf.all.accept_redirects, value: 0 }
+    - { name: net.ipv4.conf.default.accept_redirects, value: 0 }
+    - { name: net.ipv4.conf.all.secure_redirects, value: 0 }
+    - { name: net.ipv4.conf.default.secure_redirects, value: 0 }
+    - { name: net.ipv4.conf.all.log_martians, value: 1 }
+    - { name: net.ipv4.conf.default.log_martians, value: 1 }
+    - { name: net.ipv4.icmp_echo_ignore_broadcasts, value: 1 }
+    - { name: net.ipv4.icmp_ignore_bogus_error_responses, value: 1 }
+    - { name: net.ipv4.conf.all.rp_filter, value: 1 }
+    - { name: net.ipv4.conf.default.rp_filter, value: 1 }
+    - { name: net.ipv4.tcp_syncookies, value: 1 }
   notify:
-      - sysctl flush ipv4 route table
+    - sysctl flush ipv4 route table
   when:
-      - rhel7cis_is_router == false
-      - rhel7cis_rule_3_1_1
+    - rhel7cis_rule_3_1_1
+    - rhel7cis_rule_3_1_2
+    - rhel7cis_rule_3_2_1
+    - rhel7cis_rule_3_2_2
+    - rhel7cis_rule_3_2_3
+    - rhel7cis_rule_3_2_4
+    - rhel7cis_rule_3_2_5
+    - rhel7cis_rule_3_2_6
+    - rhel7cis_rule_3_2_7
+    - rhel7cis_rule_3_2_8
   tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.1.1
+    - rule_3.1.1
+    - rule_3.1.2
+    - rule_3.2.1
+    - rule_3.2.2
+    - rule_3.2.3
+    - rule_3.2.4
+    - rule_3.2.5
+    - rule_3.2.6
+    - rule_3.2.7
+    - rule_3.2.8
 
-- name: "SCORED | 3.1.2 | PATCH | Ensure packet redirect sending is disabled"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv4.conf.all.send_redirects, value: 0 }
-      - { name: net.ipv4.conf.default.send_redirects, value: 0 }
-  notify:
-      - sysctl flush ipv4 route table
+- block:
+    - name: "NOTSCORED | 3.3.1 | Ensure IPv6 router advertisements are not accepted"
+      stat:
+        path: /proc/sys/net/ipv6/conf/default/accept_ra
+      register: accept_ra
+
+    - name: "NOTSCORED | 3.3.1 | Ensure IPv6 router advertisements are not accepted"
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: yes
+        reload: yes
+      loop:
+        - { name: net.ipv6.conf.all.accept_ra, value: 0 }
+        - { name: net.ipv6.conf.default.accept_ra, value: 0 }
+      notify:
+        - sysctl flush ipv6 route table
+      when:
+        - accept_ra.stat.exists == True
   when:
-      - rhel7cis_is_router == false
-      - rhel7cis_rule_3_1_2
+    - rhel7cis_rule_3_3_1
   tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.1.2
+    - rule_3.3.1
 
-- name: "SCORED | 3.2.1 | PATCH | Ensure source routed packets are not accepted"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv4.conf.all.accept_source_route, value: 0 }
-      - { name: net.ipv4.conf.default.accept_source_route, value: 0 }
-  notify:
-      - sysctl flush ipv4 route table
+- block:
+    - name: "NOTSCORED | 3.3.2 | Ensure IPv6 redirects are not accepted"
+      stat:
+        path: /proc/sys/net/ipv6/conf/default/accept_redirects
+      register: accept_redirects
+
+    - name: "NOTSCORED | 3.3.2 | Ensure IPv6 redirects are not accepted"
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: yes
+        reload: yes
+      loop:
+        - { name: net.ipv6.conf.all.accept_redirects, value: 0 }
+        - { name: net.ipv6.conf.default.accept_redirects, value: 0 }
+      notify:
+        - sysctl flush ipv6 route table
+      when:
+        - accept_redirects.stat.exists == True
   when:
-      - rhel7cis_rule_3_2_1
+    - rhel7cis_rule_3_3_2
   tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.1
+    - rule_3.3.2
 
-- name: "SCORED | 3.2.2 | PATCH | Ensure ICMP redirects are not accepted"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv4.conf.all.accept_redirects, value: 0 }
-      - { name: net.ipv4.conf.default.accept_redirects, value: 0 }
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_2
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.2
-
-- name: "SCORED | 3.2.3 | PATCH | Ensure secure ICMP redirects are not accepted"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv4.conf.all.secure_redirects, value: 0 }
-      - { name: net.ipv4.conf.default.secure_redirects, value: 0 }
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_3
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.3
-
-- name: "SCORED | 3.2.4 | PATCH | Ensure suspicious packets are logged"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv4.conf.all.log_martians, value: 1 }
-      - { name: net.ipv4.conf.default.log_martians, value: 1 }
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_4
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.4
-
-- name: "SCORED | 3.2.5 | PATCH | Ensure broadcast ICMP requests are ignored"
-  sysctl:
-      name: net.ipv4.icmp_echo_ignore_broadcasts
-      value: 1
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_5
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.5
-
-- name: "SCORED | 3.2.6 | PATCH | Ensure bogus ICMP responses are ignored"
-  sysctl:
-      name: net.ipv4.icmp_ignore_bogus_error_responses
-      value: 1
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_6
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.6
-
-- name: "SCORED | 3.2.7 | PATCH | Ensure Reverse Path Filtering is enabled"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv4.conf.all.rp_filter, value: 1 }
-      - { name: net.ipv4.conf.default.rp_filter, value: 1 }
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_7
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.7
-
-- name: "SCORED | 3.2.8 | PATCH | Ensure TCP SYN Cookies is enabled"
-  sysctl:
-      name: net.ipv4.tcp_syncookies
-      value: 1
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  notify:
-      - sysctl flush ipv4 route table
-  when:
-      - rhel7cis_rule_3_2_8
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.2.8
-
-- name: "SCORED | 3.3.1 | PATCH | Ensure IPv6 router advertisements are not accepted"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv6.conf.all.accept_ra, value: 0 }
-      - { name: net.ipv6.conf.default.accept_ra, value: 0 }
-  notify:
-      - sysctl flush ipv6 route table
-  when:
-      - rhel7cis_ipv6_required == true
-      - rhel7cis_rule_3_3_1
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.3.1
-
-- name: "SCORED | 3.3.2 | PATCH | Ensure IPv6 redirects are not accepted"
-  sysctl:
-      name: '{{ item.name }}'
-      value: '{{ item.value }}'
-      sysctl_set: yes
-      state: present
-      reload: yes
-      ignoreerrors: yes
-  with_items:
-      - { name: net.ipv6.conf.all.accept_redirects, value: 0 }
-      - { name: net.ipv6.conf.default.accept_redirects, value: 0 }
-  notify:
-      - sysctl flush ipv6 route table
-  when:
-      - rhel7cis_ipv6_required == true
-      - rhel7cis_rule_3_3_2
-  tags:
-      - level1
-      - sysctl
-      - patch
-      - rule_3.3.2
-
-- name: "NOTSCORED | 3.3.3 | PATCH | Ensure IPv6 is disabled"
+- name: "NOTSCORED | 3.3.3 | Ensure IPv6 is disabled"
   lineinfile:
-    dest: /etc/default/grub
-    regexp: '^(GRUB_CMDLINE_LINUX=.*(?!.*ipv6\.disable=1)\"[^\"]+)(\".*)'
-    line: '\1 ipv6.disable=1\2'
+    path: /etc/default/grub
     backrefs: yes
-  notify:
-    - grub2cfg
+    regexp: '^(GRUB_CMDLINE_LINUX\s*\=\s*(?!.*ipv6.disable_ipv6)\"[^\"]+)(\".*)'
+    line: '\1 ipv6.disable_ipv6=1\2'
+    backup: yes
+  notify: generate new grub config
   when:
-      - rhel7cis_ipv6_required == false
-      - rhel7cis_rule_3_3_3
+    - rhel7cis_rule_3_3_3
   tags:
-      - level1
-      - patch
-      - rule_3.3.3
+    - rule_3.3.3
 
-- name: "SCORED | 3.4.1 | PATCH | Ensure TCP Wrappers is installed"
+- name: "SCORED | 3.4.1 | Ensure TCP Wrappers is installed"
   yum:
     name: tcp_wrappers
-    state: present
   when:
-      - rhel7cis_rule_3_4_1
+    - rhel7cis_rule_3_4_1
   tags:
-      - level1
-      - patch
-      - rule_3.4.1
+    - rule_3.4.1
 
-- name: "SCORED | 3.4.2 | PATCH | Ensure /etc/hosts.allow is configured"
+- name: "SCORED | 3.4.2 | Ensure /etc/hosts.allow is configured\n
+         SCORED | 3.4.3 | Ensure /etc/hosts.deny is configured\n
+         SCORED | 3.4.4 | Ensure permissions on /etc/hosts.allow are configured\n
+         SCORED | 3.4.5 | Ensure permissions on /etc/hosts.deny are configured"
+  copy:
+    dest: "{{ item }}"
+    content: "ALL: ALL"
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  loop:
+    - /etc/hosts.allow
+    - /etc/hosts.deny
+  when:
+    - rhel7cis_rule_3_4_2
+    - rhel7cis_rule_3_4_3
+    - rhel7cis_rule_3_4_4
+    - rhel7cis_rule_3_4_5
+  tags:
+    - rule_3.4.2
+    - rule_3.4.3
+    - rule_3.4.4
+    - rule_3.4.5
+
+- name: "NOTSCORED | 3.5.1 | Ensure DCCP is disabled\n
+         NOTSCORED | 3.5.2 | Ensure SCTP is disabled\n
+         NOTSCORED | 3.5.3 | Ensure RDS is disabled\n
+         NOTSCORED | 3.5.4 | Ensure TIPC is disabled"
   template:
-      src: hosts.allow.j2
-      dest: /etc/hosts.allow
-      owner: root
-      group: root
-      mode: 0644
+    src: etc/modprobe.d/CIS.conf
+    dest: /etc/modprobe.d/CIS.conf
+    owner: root
+    groups: root
+    mode: 0644
+    backup: yes
   when:
-      - rhel7cis_rule_3_4_2
+    - rhel7cis_rule_3_5_1
+    - rhel7cis_rule_3_5_2
+    - rhel7cis_rule_3_5_3
+    - rhel7cis_rule_3_5_4
   tags:
-      - level1
-      - patch
-      - rule_3.4.2
+    - rule_3.5.1
+    - rule_3.5.2
+    - rule_3.5.3
+    - rule_3.5.4
 
-- name: "SCORED | 3.4.3 | PATCH | Ensure /etc/hosts.deny is configured"
-  lineinfile:
-      dest: /etc/hosts.deny
-      regexp: "^(#)?ALL"
-      line: "ALL: ALL"
+- block:
+    - name: "SCORED | 3.6.1 | Ensure firewalld is installed"
+      yum:
+        name: iptables
+
+    - name: "SCORED | 3.6.1 | Ensure firewalld is started"
+      systemd:
+        name: firewalld
+        state: started
+        enabled: yes
   when:
-      - rhel7cis_rule_3_4_3
+    - rhel7cis_rule_3_6_1
   tags:
-      - level1
-      - patch
-      - rule_3.4.3
+    - rule_3.6.1
 
-- name: "SCORED | 3.4.4 | PATCH | Ensure permissions on /etc/hosts.allow are configured"
-  file:
-      dest: /etc/hosts.allow
-      owner: root
-      group: root
-      mode: 0644
-  when:
-      - rhel7cis_rule_3_4_4
+- name: "NOTSCORED | 3.7 | Ensure wireless interfaces are disabled"
+  debug:
+    msg: "There is no wireless connection on our servers"
   tags:
-      - level1
-      - patch
-      - rule_3.4.4
-
-- name: "SCORED | 3.4.5 | PATCH | Ensure permissions on /etc/hosts.deny are 644"
-  file:
-      dest: /etc/hosts.deny
-      owner: root
-      group: root
-      mode: 0644
-  when:
-      - rhel7cis_rule_3_4_5
-  tags:
-      - level1
-      - patch
-      - rule_3.4.5
-
-- name: "NOTSCORED | 3.5.1 | PATCH | Ensure DCCP is disabled"
-  lineinfile:
-      dest: /etc/modprobe.d/CIS.conf
-      regexp: "^(#)?install dccp(\\s|$)"
-      line: "install dccp /bin/true"
-      create: yes
-  when:
-      - rhel7cis_rule_3_5_1
-  tags:
-      - level1
-      - patch
-      - rule_3.5.1
-
-- name: "NOTSCORED | 3.5.2 | PATCH | Ensure SCTP is disabled"
-  lineinfile:
-      dest: /etc/modprobe.d/CIS.conf
-      regexp: "^(#)?install sctp(\\s|$)"
-      line: "install sctp /bin/true"
-      create: yes
-  when:
-      - rhel7cis_rule_3_5_2
-  tags:
-      - level1
-      - patch
-      - rule_3.5.2
-
-- name: "NOTSCORED | 3.5.3 | PATCH | Ensure RDS is disabled"
-  lineinfile:
-      dest: /etc/modprobe.d/CIS.conf
-      regexp: "^(#)?install rds(\\s|$)"
-      line: "install rds /bin/true"
-      create: yes
-  when:
-      - rhel7cis_rule_3_5_3
-  tags:
-      - level1
-      - patch
-      - rule_3.5.3
-
-- name: "NOTSCORED | 3.5.4 | PATCH | Ensure TIPC is disabled"
-  lineinfile:
-      dest: /etc/modprobe.d/CIS.conf
-      regexp: "^(#)?install tipc(\\s|$)"
-      line: "install tipc /bin/true"
-      create: yes
-  when:
-      - rhel7cis_rule_3_5_4
-  tags:
-      - level1
-      - patch
-      - rule_3.5.4
-
-- name: "SCORED | 3.6 | PATCH | Ensure firewalld is installed and started | CUSTOM"
-  yum:
-      name: firewalld
-      state: present
-  when: rhel7cis_firewall == "firewalld"
-  tags:
-      - level1
-      - patch
-      - rule_3.6
-
-- name: "SCORED | 3.6 | PATCH | Ensure firewalld is installed and started | CUSTOM"
-  service:
-      name: firewalld
-      state: started
-      enabled: yes
-  when: rhel7cis_firewall == "firewalld"
-  tags:
-      - level1
-      - patch
-      - rule_3.6
-
-- name: "SCORED | 3.6.1 | PATCH | Ensure iptables is installed"
-  yum:
-      name: iptables
-      state: present
-  when:
-      - rhel7cis_firewall == "iptables"
-      - rhel7cis_rule_3_6_1
-  tags:
-      - level1
-      - patch
-      - rule_3.6.1
-
-- name: "SCORED | 3.6.1 | PATCH | Ensure iptables is installed and started"
-  service:
-      name: iptables
-      state: started
-      enabled: yes
-  when:
-      - rhel7cis_firewall == "iptables"
-      - rhel7cis_rule_3_6_1
-  tags:
-      - level1
-      - patch
-      - rule_3.6.1
-
-- name: "SCORED | 3.6.2 | PATCH | Ensure default deny firewall policy"
-  lineinfile:
-      dest: /etc/firewalld/firewalld.conf
-      regexp: "^DefaultZone"
-      line: "DefaultZone=drop"
-  when:
-      - rhel7cis_firewall == "firewalld"
-      - rhel7cis_rule_3_6_2
-  tags:
-      - level1
-      - patch
-      - rule_3.6.2
-
-- name: "SCORED | 3.6.2 | PATCH | Ensure default deny firewall policy"
-  firewalld:
-      state: enabled
-      zone: drop
-      permanent: true
-  when:
-      - rhel7cis_firewall == "firewalld"
-      - rhel7cis_rule_3_6_2
-  tags:
-      - level1
-      - patch
-      - rule_3.6.2
-
-- name: "SCORED | 3.6.2 | PATCH | Ensure default deny firewall policy"
-  command: /bin/true
-  changed_when: no
-  when:
-      - rhel7cis_firewall == "iptables"
-      - rhel7cis_rule_3_6_2
-  tags:
-      - level1
-      - patch
-      - rule_3.6.2
-      - notimplemented
-
-- name: "SCORED | 3.6.3 | PATCH | Ensure loopback traffic is configured"
-  command: /bin/true
-  changed_when: no
-  when:
-      - rhel7cis_firewall == "iptables"
-      - rhel7cis_rule_3_6_3
-  tags:
-      - level1
-      - patch
-      - rule_3.6.3
-      - notimplemented
-
-- name: "NOTSCORED | 3.6.4 | PATCH | Ensure outbound and established connections are configured"
-  command: /bin/true
-  changed_when: no
-  when:
-      - rhel7cis_firewall == "iptables"
-      - rhel7cis_rule_3_6_4
-  tags:
-      - level1
-      - patch
-      - rule_3.6.4
-      - notimplemented
-
-- name: "SCORED | 3.6.5 | PATCH | Ensure firewall rules exist for all open ports"
-  firewalld:
-      service: "{{ item }}"
-      state: enabled
-      zone: drop
-      permanent: true
-      immediate: true
-  notify: restart firewalld
-  with_items: "{{ rhel7cis_firewall_services }}"
-  when:
-      - rhel7cis_firewall == "firewalld"
-      - rhel7cis_rule_3_6_5
-  tags:
-      - level1
-      - patch
-      - rule_3.6.5
-
-- name: "SCORED | 3.6.5 | PATCH | Ensure firewall rules exist for all open ports"
-  command: /bin/true
-  changed_when: no
-  when:
-      - rhel7cis_firewall == "iptables"
-      - rhel7cis_rule_3_6_5
-  tags:
-      - level1
-      - patch
-      - rule_3.6.5
-      - notimplemented
-
-- name: "NOTSCORED | 3.7 | PATCH | Ensure wireless interfaces are disabled"
-  command: /bin/true
-  changed_when: no
-  tags:
-      - level1
-      - level2
-      - patch
-      - rule_3.7
+    - rule_3.7

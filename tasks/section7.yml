@@ -1,0 +1,77 @@
+---
+- name: "NOTSCORED | 7.1 | Ensure /usr/sbin/userhelper has correct permissions"
+  file:
+    path: /usr/sbin/userhelper
+    mode: 04710
+    owner: root
+    group: root
+  when:
+    - rhel7cis_rule_7_1
+  tags:
+    - rule_7.1
+
+- name: "NOTSCORED | 7.2 | Ensure autologout is configured"
+  copy:
+    dest: /etc/profile.d/autologout.csh
+    content: "set -r autologout=15"
+    mode: 0644
+    owner: root
+    group: root
+  when:
+    - rhel7cis_rule_7_2
+  tags:
+    - rule_7.2
+
+- name: "NOTSCORED | 7.3 | Ensure nodev, nosuid, noexec is set on /var/log partition"
+  mount:
+    name: "/var/log"
+    src: "{{ item.device }}"
+    state: mounted
+    fstype: "{{ item.fstype }}"
+    opts: "nodev,nosuid,noexec"
+  when:
+    - rhel7cis_rule_7_3
+    - item.mount == "/var/log"
+  loop: "{{ ansible_mounts }}"
+  tags:
+    - rule_7.3
+
+- name: "SCORED | 7.4 | Ensure that old audit rules are flushed"
+  copy:
+    src: etc/audit/rules.d/rhel7cis_rule_clear.rules
+    dest: /etc/audit/rules.d/rhel7cis_rule_clear.rules
+    owner: root
+    group: root
+    mode: 0600
+  when:
+    - rhel7cis_rule_7_4
+  notify:
+    - restart auditd
+  tags:
+    - rule_7.4
+
+- block:
+    - name: "NOTSCORED | 7.5 | Ensure puppet changed related to auditd are reverted"
+      file:
+        path: /etc/audit/rules.d/puppet.rules
+        state: absent
+      notify: restart auditd
+
+    - name: "NOTSCORED | 7.5 | Ensure puppet changed related to grub are reverted"
+      file:
+        path: /etc/grub.d/01_users
+        state: absent
+      notify: generate new grub config
+
+    - name: "NOTSCORED | 7.5 | Ensure puppet changed related to modprobe are reverted"
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/modprobe.d/cis-filesystems.conf
+        - /etc/modprobe.d/cis-networkprotocols.conf
+        - /etc/profile.d/autologout.sh
+  when:
+    - rhel7cis_rule_7_5
+  tags:
+    - rule_7.5
